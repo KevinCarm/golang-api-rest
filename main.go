@@ -17,6 +17,7 @@ func main() {
 	app := fiber.New()
 
 	app.Get("/api/users", GetAll)
+	app.Get("/api/users/:id", GetOneById)
 	app.Post("/api/users", Insert)
 
 	log.Fatal(app.Listen(":8080"))
@@ -40,4 +41,21 @@ func GetAll(c *fiber.Ctx) error {
 	DbConnection.Find(&users)
 
 	return c.JSON(users)
+}
+
+func GetOneById(c *fiber.Ctx) error {
+	id := c.Params("id")
+	user := model.User{}
+
+	result := DbConnection.Find(&user, id)
+
+	if result.RowsAffected > 0 {
+		return c.JSON(user)
+	}
+
+	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+		"code":    fiber.StatusNotFound,
+		"message": "Not found",
+	})
+
 }
