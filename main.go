@@ -16,10 +16,22 @@ func main() {
 
 	app := fiber.New()
 
-	app.Get("/", GetAll)
+	app.Get("/api/users", GetAll)
+	app.Post("/api/users", Insert)
 
 	log.Fatal(app.Listen(":8080"))
 
+}
+
+func Insert(c *fiber.Ctx) error {
+	user := new(model.User)
+
+	if err := c.BodyParser(user); err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Bad request")
+	}
+
+	DbConnection.Create(&user)
+	return c.JSON(user)
 }
 
 func GetAll(c *fiber.Ctx) error {
