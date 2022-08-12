@@ -19,6 +19,7 @@ func main() {
 	app.Get("/api/users", GetAll)
 	app.Get("/api/users/:id", GetOneById)
 	app.Post("/api/users", Insert)
+	app.Delete("/api/users/:id", DeleteById)
 
 	log.Fatal(app.Listen(":8080"))
 
@@ -57,5 +58,22 @@ func GetOneById(c *fiber.Ctx) error {
 		"code":    fiber.StatusNotFound,
 		"message": "Not found",
 	})
+}
 
+func DeleteById(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	user := model.User{}
+
+	DbConnection.Find(&user, id)
+
+	if user.ID == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"code":    fiber.StatusNotFound,
+			"message": "User does not exist in the database",
+		})
+	}
+
+	DbConnection.Delete(&user)
+	return c.SendString("User deleted")
 }
