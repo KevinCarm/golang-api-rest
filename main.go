@@ -20,6 +20,7 @@ func main() {
 	app.Get("/api/users/:id", GetOneById)
 	app.Post("/api/users", Insert)
 	app.Delete("/api/users/:id", DeleteById)
+	app.Put("/api/users/:id", Update)
 
 	log.Fatal(app.Listen(":8080"))
 
@@ -28,7 +29,7 @@ func main() {
 func Insert(c *fiber.Ctx) error {
 	user := new(model.User)
 
-	if err := c.BodyParser(user); err != nil {
+	if err := c.BodyParser(&user); err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("Bad request")
 	}
 
@@ -76,4 +77,31 @@ func DeleteById(c *fiber.Ctx) error {
 
 	DbConnection.Delete(&user)
 	return c.SendString("User deleted")
+}
+
+func Update(c *fiber.Ctx) error {
+	id := c.Params("id")
+	user := model.User{}
+
+	DbConnection.Find(&user, id)
+	if user.ID > 0 {
+		newUser := model.User{}
+		if err := c.BodyParser(&newUser); err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"code":    fiber.StatusBadRequest,
+				"message": err.Error(),
+			})
+		}
+		user.Name = newUser.Name
+		user.Email = newUser.Email
+		user.Password = newUser.Password
+
+		DbConnection.Save(&user)
+		return c.SendString("User updated")
+	}
+
+	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+		"code":    fiber.StatusNotFound,
+		"message": "User does not exist in the database",
+	})
 }
