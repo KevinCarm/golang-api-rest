@@ -29,6 +29,7 @@ func main() {
 		Product routes
 	*/
 	app.Get("/api/products", GetAllProducts)
+	app.Get("/api/products/:id", GetOneByIdProduct)
 
 	log.Fatal(app.Listen(":8080"))
 
@@ -125,4 +126,21 @@ func GetAllProducts(c *fiber.Ctx) error {
 	DbConnection.Find(&products)
 
 	return c.JSON(products)
+}
+
+func GetOneByIdProduct(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	product := model.Product{}
+
+	result := DbConnection.Find(&product, id)
+
+	if result.RowsAffected > 0 {
+		return c.JSON(product)
+	}
+
+	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+		"code":    fiber.StatusNotFound,
+		"message": "Not found",
+	})
 }
