@@ -9,24 +9,35 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-var StringConnection string = "root:12345678@tcp(127.0.0.1:3306)/gorm_db"
+var StringConnection = "root:12345678@tcp(127.0.0.1:3306)/gorm_db"
 var DbConnection = connection.GetConnection(StringConnection)
 
 func main() {
 
 	app := fiber.New()
 
-	app.Get("/api/users", GetAll)
-	app.Get("/api/users/:id", GetOneById)
-	app.Post("/api/users", Insert)
-	app.Delete("/api/users/:id", DeleteById)
-	app.Put("/api/users/:id", Update)
+	/*
+		User routes
+	*/
+	app.Get("/api/users", GetAllUser)
+	app.Get("/api/users/:id", GetOneByIdUser)
+	app.Post("/api/users", InsertUser)
+	app.Delete("/api/users/:id", DeleteByIdUser)
+	app.Put("/api/users/:id", UpdateUser)
+
+	/*
+		Product routes
+	*/
+	app.Get("/api/products", GetAllProducts)
 
 	log.Fatal(app.Listen(":8080"))
 
 }
 
-func Insert(c *fiber.Ctx) error {
+//User implementation
+
+// InsertUser - Insert a new user
+func InsertUser(c *fiber.Ctx) error {
 	user := new(model.User)
 
 	if err := c.BodyParser(&user); err != nil {
@@ -37,15 +48,15 @@ func Insert(c *fiber.Ctx) error {
 	return c.JSON(user)
 }
 
-func GetAll(c *fiber.Ctx) error {
-	users := []model.User{}
+func GetAllUser(c *fiber.Ctx) error {
+	var users []model.User
 
 	DbConnection.Preload("Products").Find(&users)
 
 	return c.JSON(users)
 }
 
-func GetOneById(c *fiber.Ctx) error {
+func GetOneByIdUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 	user := model.User{}
 
@@ -61,7 +72,7 @@ func GetOneById(c *fiber.Ctx) error {
 	})
 }
 
-func DeleteById(c *fiber.Ctx) error {
+func DeleteByIdUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	user := model.User{}
@@ -79,7 +90,7 @@ func DeleteById(c *fiber.Ctx) error {
 	return c.SendString("User deleted")
 }
 
-func Update(c *fiber.Ctx) error {
+func UpdateUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 	user := model.User{}
 
@@ -104,4 +115,14 @@ func Update(c *fiber.Ctx) error {
 		"code":    fiber.StatusNotFound,
 		"message": "User does not exist in the database",
 	})
+}
+
+// Product implementation
+
+func GetAllProducts(c *fiber.Ctx) error {
+	var products []model.Product
+
+	DbConnection.Find(&products)
+
+	return c.JSON(products)
 }
