@@ -40,7 +40,7 @@ func Insert(c *fiber.Ctx) error {
 func GetAll(c *fiber.Ctx) error {
 	users := []model.User{}
 
-	DbConnection.Find(&users)
+	DbConnection.Preload("Products").Find(&users)
 
 	return c.JSON(users)
 }
