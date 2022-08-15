@@ -30,6 +30,7 @@ func main() {
 	go app.Get("/api/products", GetAllProducts)
 	go app.Get("/api/products/:id", GetOneByIdProduct)
 	go app.Post("/api/products/:id", InsertProduct)
+	go app.Delete("/api/products", DeleteByIdProduct)
 
 	log.Fatal(app.Listen(":8080"))
 
@@ -37,7 +38,6 @@ func main() {
 
 //User implementation
 
-// InsertUser - Insert a new user
 func InsertUser(c *fiber.Ctx) error {
 	user := new(model.User)
 
@@ -125,7 +125,7 @@ func GetAllProducts(c *fiber.Ctx) error {
 
 	DbConnection.Find(&products)
 
-	return c.JSON(products)
+	return c.Status(fiber.StatusOK).JSON(products)
 }
 
 func GetOneByIdProduct(c *fiber.Ctx) error {
@@ -136,7 +136,7 @@ func GetOneByIdProduct(c *fiber.Ctx) error {
 	result := DbConnection.Find(&product, id)
 
 	if result.RowsAffected > 0 {
-		return c.JSON(product)
+		return c.Status(fiber.StatusOK).JSON(product)
 	}
 
 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -159,8 +159,33 @@ func InsertProduct(c *fiber.Ctx) error {
 			})
 		}
 		DbConnection.Create(&product)
-		return c.JSON(product)
+		return c.Status(fiber.StatusOK).JSON(product)
 	}
+	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+		"code":    fiber.StatusNotFound,
+		"message": "User not found",
+	})
+}
+
+func DeleteByIdProduct(c *fiber.Ctx) error {
+	userId := c.Query("user")
+	productId := c.Query("product")
+	user := model.User{}
+
+	DbConnection.Find(&user, userId)
+	if user.ID > 0 {
+		product := model.Product{}
+		DbConnection.Find(&product, productId)
+		if product.Id > 0 {
+			DbConnection.Delete(&product, productId)
+			return c.Status(fiber.StatusOK).SendString("Product deleted successfully")
+		}
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"code":    fiber.StatusNotFound,
+			"message": "Product not found",
+		})
+	}
+
 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 		"code":    fiber.StatusNotFound,
 		"message": "User not found",
