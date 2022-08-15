@@ -1,10 +1,9 @@
 package main
 
 import (
-	"log"
-
 	"gorm/connection"
 	"gorm/model"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -19,17 +18,18 @@ func main() {
 	/*
 		User routes
 	*/
-	app.Get("/api/users", GetAllUser)
-	app.Get("/api/users/:id", GetOneByIdUser)
-	app.Post("/api/users", InsertUser)
-	app.Delete("/api/users/:id", DeleteByIdUser)
-	app.Put("/api/users/:id", UpdateUser)
+	go app.Get("/api/users", GetAllUser)
+	go app.Get("/api/users/:id", GetOneByIdUser)
+	go app.Post("/api/users", InsertUser)
+	go app.Delete("/api/users/:id", DeleteByIdUser)
+	go app.Put("/api/users/:id", UpdateUser)
 
 	/*
 		Product routes
 	*/
-	app.Get("/api/products", GetAllProducts)
-	app.Get("/api/products/:id", GetOneByIdProduct)
+	go app.Get("/api/products", GetAllProducts)
+	go app.Get("/api/products/:id", GetOneByIdProduct)
+	go app.Post("/api/products/:id", InsertProduct)
 
 	log.Fatal(app.Listen(":8080"))
 
@@ -142,5 +142,27 @@ func GetOneByIdProduct(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 		"code":    fiber.StatusNotFound,
 		"message": "Not found",
+	})
+}
+
+func InsertProduct(c *fiber.Ctx) error {
+	id := c.Params("id")
+	user := model.User{}
+	DbConnection.Find(&user, id)
+
+	if user.ID > 0 {
+		product := model.Product{}
+		if err := c.BodyParser(&product); err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"code":    fiber.StatusBadRequest,
+				"message": "Bad request",
+			})
+		}
+		DbConnection.Create(&product)
+		return c.JSON(product)
+	}
+	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+		"code":    fiber.StatusNotFound,
+		"message": "User not found",
 	})
 }
