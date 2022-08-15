@@ -31,6 +31,7 @@ func main() {
 	go app.Get("/api/products/:id", GetOneByIdProduct)
 	go app.Post("/api/products/:id", InsertProduct)
 	go app.Delete("/api/products", DeleteByIdProduct)
+	go app.Put("/api/products/:id", UpdateProduct)
 
 	log.Fatal(app.Listen(":8080"))
 
@@ -189,5 +190,32 @@ func DeleteByIdProduct(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 		"code":    fiber.StatusNotFound,
 		"message": "User not found",
+	})
+}
+
+func UpdateProduct(c *fiber.Ctx) error {
+	id := c.Params("id")
+	findProduct := model.Product{}
+	DbConnection.Find(&findProduct, id)
+
+	if findProduct.Id > 0 {
+		newProduct := model.Product{}
+		if err := c.BodyParser(&newProduct); err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"code":    fiber.StatusBadRequest,
+				"message": "Bad request",
+				"err":     err.Error(),
+			})
+		}
+		findProduct.Name = newProduct.Name
+		findProduct.Price = newProduct.Price
+		findProduct.UserId = newProduct.UserId
+		DbConnection.Save(&findProduct)
+
+		return c.Status(fiber.StatusOK).JSON("Product updated successfully")
+	}
+	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+		"code":    fiber.StatusNotFound,
+		"message": "Product not found",
 	})
 }
